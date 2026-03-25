@@ -28,7 +28,7 @@ class _Vertex:
     forward_links: set[_Vertex]
     reverse_links: set[_Vertex]
 
-    def __init__(self, article_name: str, article_id: int,) -> None:
+    def __init__(self, article_name: str, article_id: int) -> None:
         """Initialize a new vertex with the given article name and ID.
 
         This vertex is initialized with no links.
@@ -38,6 +38,8 @@ class _Vertex:
         """
         self.article_name = article_name
         self.article_id = article_id
+        self.forward_links = set()
+        self.reverse_links = set()
 
     def degree_fl(self) -> int:
         """Return the degree of the forward links."""
@@ -111,7 +113,7 @@ class Graph:
         """
         if item in self._vertices:
             v = self._vertices[item]
-            return {links.article_name for links in v.forward_link}
+            return {links.article_name for links in v.forward_links}
         else:
             raise ValueError
 
@@ -134,14 +136,21 @@ def load_graph(hyperlinks_file: str, page_name_file: str) -> Graph:
     with open(page_name_file) as csvfile:
         new_page_name = csv.reader(csvfile)
         for row in new_page_name:
-            articles[row[0]] = row[1]
-            graph.add_vertex(row[0], int(row[1]))
+            cleaned_line = row[0].split(' ', maxsplit=1)
+            articles[cleaned_line[0]] = cleaned_line[1]
+            graph.add_vertex(cleaned_line[1], int(cleaned_line[0]))
+            print(f"Added article ID {cleaned_line[0]} for {cleaned_line[1]}.")
 
     with open(hyperlinks_file) as csvfile:
         new_hyperlinks_file = csv.reader(csvfile)
         for row in new_hyperlinks_file:
-            article1, article2 = row[0], row[1]
+            cleaned_line = row[0].split(' ', maxsplit=1)
+            article1, article2 = cleaned_line[0], cleaned_line[1]
             if article1 != article2:
-                graph.add_forward_edge(articles[row[0]], articles[row[1]])  # tis 1st,toMeetTheRepInvInVertexClass
+                graph.add_forward_edge(articles[cleaned_line[0]], articles[cleaned_line[1]])
+                print(f"Added edge between {article1} and {article2}.")
 
     return graph
+
+
+load_graph('wiki-topcats.txt', 'wiki-topcats-page-names.txt')
