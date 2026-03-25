@@ -144,4 +144,26 @@ class Graph:
         return set(self._vertices.keys())
 
 
+def load_graph(hyperlinks_file: str, page_name_file: str) -> Graph:
+    """Return a wikipedia graph corresponding to the given datasets.
+    """
 
+    graph = Graph()
+    mapping_page = {}
+    keeping_track = set()
+
+    with open(page_name_file) as csvfile:
+        new_page_name = csv.reader(csvfile)
+        for row in new_page_name:
+            mapping_page[row[0]] = row[1]
+            graph.add_vertex(row[0], int(row[1]))
+
+    with open(hyperlinks_file) as csvfile:
+        new_hyperlinks_file = csv.reader(csvfile)
+        for row in new_hyperlinks_file:
+            if row[0] != row[1]:
+                graph.add_forward_edge(mapping_page[[0]], mapping_page[row[1]])  # tis 1st,toMeetTheRepInvInVertexClass
+                if row[0] in keeping_track:
+                    graph.add_bidirectional_edge(mapping_page[[0]], mapping_page[row[1]])
+                keeping_track.add(row[1])
+    return graph
