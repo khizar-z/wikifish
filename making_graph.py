@@ -5,37 +5,33 @@ from typing import Any
 
 
 class _Vertex:
-    """A vertex is used to represent a wikipedia article.
+    """A vertex representing a Wikipedia article.
 
-    Each vertex is represented using the name of the article and its id, which was assigned during the data collection
-    phase. The article name is a string and the id is an int. Forward_link is a set containing all the articles
-    accessible from the current one. We call the link between two articles to be bidirectional, when article A can
-    be accessed from article B and vice versa
+    Each vertex holds the name of the article and its ID. The article name is a string and the id is an int.
+    forward_link is a set containing all the articles accessible from the current one. The link between two
+    articles is bidirectional iff article A can be accessed from article B and vice versa.
 
     Instance Attributes:
         - article_name: The name of the wikipedia page article.
         - article_id: The id of the wikipedia page, assigned during data collection.
-        - forward_link: The vertices that are accessible from this wikipedia page, ie the wikipedia articles that
-        the different hyperlinks redirect to.
-        - bidirectional_link: The vertices that are accessible from this wikipedia page, whose forward link's can
-        access this article as well.
+        - forward_links: The vertices that are accessible via links from the current one.
+        - reverse_links: The set of vertices that are pointing to this vertex via links.
 
     Representation Invariants:
-        - self not in self.forward_link
-        - self not in self.bidirectional_link
-        - all(self in u.neighbours for u in self.neighbours)
-        - IF IN OMIDIRECTIONAL THEN FORWARD DIRECTIN FOR BOTH
+        - self not in self.forward_links
+        - self not in self.reverse_links
+        -
+        -
     """
     article_name: str
     article_id: int
-    forward_link: set[_Vertex]
-    bidirectional_link: set[_Vertex]
+    forward_links: set[_Vertex]
+    reverse_links: set[_Vertex]
 
-    def __init__(self, article_name: str,
-                 article_id: int,) -> None:
-        """Initialize a new vertex with the given item and kind.
+    def __init__(self, article_name: str, article_id: int,) -> None:
+        """Initialize a new vertex with the given article name and ID.
 
-        This vertex is initialized with no neighbours.
+        This vertex is initialized with no links.
 
         Preconditions:
             -
@@ -45,21 +41,21 @@ class _Vertex:
 
     def degree_fl(self) -> int:
         """Return the degree of the forward links."""
-        return len(self.forward_link)
+        return len(self.forward_links)
 
-    def degree_om(self) -> int:
-        """Return the degree of the bidirectional links."""
-        return len(self.bidirectional_link)
+    def degree_rl(self) -> int:
+        """Return the degree of the reverse links."""
+        return len(self.reverse_links)
 
 
 class Graph:
-    """A graph used to represent a wikipedia article network.
+    """A graph used to represent a Wikipedia article network.
     """
     # Private Instance Attributes:
     #     - _vertices:
     #         A collection of the vertices contained in this graph.
     #         Maps item to _Vertex object.
-    _vertices: dict[Any, _Vertex]
+    _vertices: dict[str, _Vertex]
 
     def __init__(self) -> None:
         """Initialize an empty graph (no vertices or edges)."""
@@ -78,35 +74,19 @@ class Graph:
             self._vertices[article_name] = _Vertex(article_name, article_id)
 
     def add_forward_edge(self, article_name1: str, article_name2: str) -> None:
-        """Add a one directional edge pointing from article 1 to article 2 in this graph.
+        """Add a directed edge from article 1 to article 2 in this graph.
 
-        Raise a ValueError if item1 or item2 do not appear as vertices in this graph.
+        Raise a ValueError if article_name1 or article_name2 do not appear as vertices in this graph.
 
         Preconditions:
-            - item1 != item2
+            - article_name1 != article_name2
         """
         if article_name1 in self._vertices and article_name2 in self._vertices:
             v1 = self._vertices[article_name1]
             v2 = self._vertices[article_name2]
 
-            v1.forward_link.add(v2)
-        else:
-            raise ValueError
-
-    def add_bidirectional_edge(self, article_name1: str, article_name2: str) -> None:
-        """Add a bidirectional edge between the two articles in this graph.
-
-        Raise a ValueError if item1 or item2 do not appear as vertices in this graph.
-
-        Preconditions:
-            - item1 != item2
-        """
-        if article_name1 in self._vertices and article_name2 in self._vertices:
-            v1 = self._vertices[article_name1]
-            v2 = self._vertices[article_name2]
-
-            v1.bidirectional_link.add(v2)
-            v2.bidirectional_link.add(v1)
+            v1.forward_links.add(v2)
+            v2.reverse_links.add(v1)
         else:
             raise ValueError
 
@@ -145,25 +125,23 @@ class Graph:
 
 
 def load_graph(hyperlinks_file: str, page_name_file: str) -> Graph:
-    """Return a wikipedia graph corresponding to the given datasets.
+    """Return a Wikipedia graph corresponding to the given datasets.
     """
 
     graph = Graph()
-    mapping_page = {}
-    keeping_track = set()
+    articles = {}
 
     with open(page_name_file) as csvfile:
         new_page_name = csv.reader(csvfile)
         for row in new_page_name:
-            mapping_page[row[0]] = row[1]
+            articles[row[0]] = row[1]
             graph.add_vertex(row[0], int(row[1]))
 
     with open(hyperlinks_file) as csvfile:
         new_hyperlinks_file = csv.reader(csvfile)
         for row in new_hyperlinks_file:
-            if row[0] != row[1]:
-                graph.add_forward_edge(mapping_page[[0]], mapping_page[row[1]])  # tis 1st,toMeetTheRepInvInVertexClass
-                if row[0] in keeping_track:
-                    graph.add_bidirectional_edge(mapping_page[[0]], mapping_page[row[1]])
-                keeping_track.add(row[1])
+            article1, article2 = row[0], row[1]
+            if article1 != article2:
+                graph.add_forward_edge(articles[row[0]], articles[row[1]])  # tis 1st,toMeetTheRepInvInVertexClass
+
     return graph
