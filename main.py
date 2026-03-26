@@ -1,13 +1,12 @@
 
 from load_graph import load_graph
-
+import pathfinding
 
 def init(start, end, graph):
     """
     Docstring unimplemented
     """
     pass
-
 
 if __name__ == '__main__':
     graph, categories = load_graph(
