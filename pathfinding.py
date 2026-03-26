@@ -28,8 +28,7 @@ def astar(graph: Graph, source: str, target: str, categories: dict[int, set[str]
     h(n) = the heuristic estimate of the cost from node n to the goal, provided by jaccard_heuristic()
     with f(n) = g(n) + h(n)
 
-    Returns a list of article names from source to target (inclusive),
-    or None if no path exists.
+    Returns a list of article names from source to target (inclusive), or None if no path exists.
 
     Preconditions:
         - source in graph._vertices
@@ -39,16 +38,16 @@ def astar(graph: Graph, source: str, target: str, categories: dict[int, set[str]
     target_vertex = graph.get_vertex_by_name(target)
 
     start_h = jaccard_heuristic(source_vertex.article_id, target_vertex.article_id, categories)
-    heap = [(start_h, 0, source)] # f, g, article_name
+    heap = [(start_h, 0, source)]  # f, g, article_name
 
-    # Maps article_name to best g_score seen so far
+    # Maps article_name to best g score seen so far
     best_g: dict[str, float] = {source: 0}
 
     # Maps article_name to previous article_name
     came_from: dict[str, str] = {}
 
     while heap:
-        f, g, current_name = heapq.heappop(heap)
+        _, g, current_name = heapq.heappop(heap)
 
         if current_name == target:
             return _reconstruct_path(came_from, source, target)
@@ -82,3 +81,7 @@ def _reconstruct_path(came_from: dict[str, str], source: str, target: str) -> li
     path.append(source)
     path.reverse()
     return path
+
+
+# Note: examine potential of using f = h, eliminating depth -- only caring about Jaccard similarity. When similarity
+# patterns are good, it provides immediate answer.
