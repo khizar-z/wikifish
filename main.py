@@ -1,10 +1,9 @@
 
 from load_graph import load_graph
-import pathfinding
+from pathfinding import *
 
 def init(start, end, graph):
-    """
-    Docstring unimplemented
+    """Docstring unimplemented
     """
     pass
 
@@ -14,4 +13,6 @@ if __name__ == '__main__':
         'wiki-topcats-page-names.txt',
         'wiki-topcats-categories.txt'
     )
+
+
 

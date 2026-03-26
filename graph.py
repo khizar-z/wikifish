@@ -123,3 +123,7 @@ class Graph:
             -
         """
         return set(self._vertices.keys())
+
+    def get_vertex_by_name(self, article_name: str) -> _Vertex:
+        """Return a vertex from the given article name."""
+        return self._vertices[article_name]
