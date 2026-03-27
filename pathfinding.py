@@ -71,6 +71,57 @@ def astar(graph: Graph, source: str, target: str, categories: dict[int, set[str]
     return None
 
 
+def astar_all(graph: Graph, source: str, target: str, categories: dict[int, set[str]], max_paths: int = 5) -> list[list[str]] | None:
+    """Return up to max_paths optimal paths from source to target using A*.
+
+    Returns a list of paths, where each path is a list of article names
+    from source to target (inclusive). Returns None if no path exists.
+    """
+    source_vertex = graph.get_vertex_by_name(source)
+    target_vertex = graph.get_vertex_by_name(target)
+
+    start_h = jaccard_heuristic(source_vertex.article_id, target_vertex.article_id, categories)
+    heap = [(start_h, 0, source)]
+
+    best_g: dict[str, float] = {source: 0}
+    came_from: dict[str, set[str]] = {source: set()}
+    optimal_target_g: float | None = None
+
+    while heap:
+        _, g, current_name = heapq.heappop(heap)
+
+        if optimal_target_g is not None and g > optimal_target_g:
+            break
+
+        if current_name == target:
+            optimal_target_g = g
+            continue
+
+        if g > best_g.get(current_name, float('inf')):
+            continue
+
+        current_vertex = graph.get_vertex_by_name(current_name)
+
+        for neighbour in current_vertex.forward_links:
+            new_g = g + 1
+            neighbour_name = neighbour.article_name
+            current_best = best_g.get(neighbour_name, float('inf'))
+
+            if new_g < current_best:
+                best_g[neighbour_name] = new_g
+                came_from[neighbour_name] = {current_name}
+                h = jaccard_heuristic(neighbour.article_id, target_vertex.article_id, categories)
+                heapq.heappush(heap, (new_g + h, new_g, neighbour_name))
+
+            elif new_g == current_best:
+                came_from.setdefault(neighbour_name, set()).add(current_name)
+
+    if target not in came_from:
+        return None
+
+    return _reconstruct_all_paths(came_from, source, target, max_paths)
+
+
 def _reconstruct_path(came_from: dict[str, str], source: str, target: str) -> list[str]:
     """Reconstruct the path from source to target using the came_from map."""
     path = []
@@ -82,6 +133,22 @@ def _reconstruct_path(came_from: dict[str, str], source: str, target: str) -> li
     path.reverse()
     return path
 
+
+def _reconstruct_all_paths(came_from: dict[str, set[str]], source: str, target: str, max_paths: int) -> list[list[str]]:
+    """Recursively reconstruct up to max_paths optimal paths from source to target."""
+    if target == source:
+        return [[source]]
+
+    all_paths = []
+    for predecessor in came_from.get(target, set()):
+        if len(all_paths) >= max_paths:
+            break
+        for path in _reconstruct_all_paths(came_from, source, predecessor, max_paths):
+            if len(all_paths) >= max_paths:
+                break
+            all_paths.append(path + [target])
+
+    return all_paths
 
 # Note: examine potential of using f = h, eliminating depth -- only caring about Jaccard similarity. When similarity
 # patterns are good, it provides immediate answer.
