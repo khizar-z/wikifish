@@ -4,7 +4,7 @@ A module containing the functions responsible for the pathfinding
 algorithms used by the program. Contains functions for bidirectional
 BFS and A* as well as relevant helper functions.
 
-Copyright (c) 2025 Khizar Zaman, Safid Musabbir, Tanishq Pol
+Copyright (c) 2026 Khizar Zaman, Safid Musabbir, Tanishq Pol, Ali Mallick
 """
 import heapq
 

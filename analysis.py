@@ -3,7 +3,7 @@
 A module containing two functions (find_paths and run_analysis)
 that generate comprehensive post-game analysis data to be displayed.
 
-Copyright (c) 2025 Khizar Zaman, Safid Musabbir, Tanishq Pol
+Copyright (c) 2026 Khizar Zaman, Safid Musabbir, Tanishq Pol, Ali Mallick
 """
 from __future__ import annotations
 from graph import Graph

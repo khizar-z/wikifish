@@ -3,7 +3,7 @@
 The starting point for the program. Loads the graph through load_graph()
 and initiates the website through wikifish_app.init().
 
-Copyright (c) 2025 Khizar Zaman, Safid Musabbir, Tanishq Pol
+Copyright (c) 2026 Khizar Zaman, Safid Musabbir, Tanishq Pol, Ali Mallick
 """
 from load_graph import load_graph
 import app as wikifish_app
