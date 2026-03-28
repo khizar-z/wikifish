@@ -1,4 +1,10 @@
+"""load_graph.py
 
+A module containing the code that loads the three dataset
+files into a Graph and categories dictionary.
+
+Copyright (c) 2025 Khizar Zaman, Safid Musabbir, Tanishq Pol
+"""
 from __future__ import annotations
 import sys
 import csv
@@ -39,3 +45,14 @@ def load_graph(hyperlinks_file: str, page_name_file: str, categories_file: str) 
                 if int(aid) in articles:
                     categories[int(aid)].add(category_name)
     return graph, categories
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
+    import python_ta
+    python_ta.check_all(config={
+        'extra-imports': ['graph', 'heapq', 'collections', 'networkx', 'dash', 'plotly', ],
+        'allowed-io': ['load_graph', 'run_analysis'],
+        'max-line-length': 120
+    })

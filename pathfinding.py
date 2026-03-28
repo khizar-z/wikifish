@@ -1,4 +1,11 @@
+"""pathfinding.py
 
+A module containing the functions responsible for the pathfinding
+algorithms used by the program. Contains functions for bidirectional
+BFS and A* as well as relevant helper functions.
+
+Copyright (c) 2025 Khizar Zaman, Safid Musabbir, Tanishq Pol
+"""
 import heapq
 
 from graph import Graph
@@ -185,3 +192,14 @@ def _reconstruct_all_paths(came_from: dict[str, set[str]], source: str, target: 
             all_paths.append(path + [target])
 
     return all_paths
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
+    import python_ta
+    python_ta.check_all(config={
+        'extra-imports': ['graph', 'heapq', 'collections', 'networkx', 'dash', 'plotly', ],
+        'allowed-io': ['load_graph', 'run_analysis'],
+        'max-line-length': 120
+    })
