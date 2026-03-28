@@ -5,9 +5,18 @@ from graph import Graph
 
 
 def jaccard_heuristic(current: int, target: int, categories: dict[int, set[str]]) -> float:
-    """
-    Return the Jaccard similarity between two sets of vertices based on the intersection and union of their
-    associated sets of categories.
+    """Return an estimated distance between two articles based on category overlap.
+
+    Computes one minus the Jaccard similarity of the two articles' category sets.
+    The result is in [0.0, 1.0], where 0.0 means identical categories (very close)
+    and 1.0 means no shared categories (very far). Returns 1.0 if either article
+    has no category data.
+
+    Used as the h(n) heuristic in A* search.
+
+    Preconditions:
+        - current in categories
+        - target in categories
     """
     current_cats = categories[current]
     target_cats = categories[target]
@@ -21,18 +30,19 @@ def jaccard_heuristic(current: int, target: int, categories: dict[int, set[str]]
 
 
 def astar(graph: Graph, source: str, target: str, categories: dict[int, set[str]]) -> list[str] | None:
-    """Return the shortest path from source to target using A*.
+    """Return a shortest path from source to target using A* search.
 
-    f(n) = the estimated total cost of a path through node n
-    g(n) = the exact cost to get from the start node to node n (number of hops taken so far)
-    h(n) = the heuristic estimate of the cost from node n to the goal, provided by jaccard_heuristic()
-    with f(n) = g(n) + h(n)
+    Uses a priority queue ordered by f(n) = g(n) + h(n), where g(n) is the
+    exact hop-count from source to n, and h(n) is the Jaccard category heuristic.
+    The heuristic directs the search toward articles that share more categories
+    with the target, potentially expanding far fewer nodes than BFS.
 
-    Returns a list of article names from source to target (inclusive), or None if no path exists.
+    Returns a list of article names from source to target (inclusive),
+    or None if no path exists.
 
     Preconditions:
-        - source in graph._vertices
-        - target in graph._vertices
+        - graph.contains_vertex(source)
+        - graph.contains_vertex(target)
     """
     source_vertex = graph.get_vertex_by_name(source)
     target_vertex = graph.get_vertex_by_name(target)
@@ -72,10 +82,20 @@ def astar(graph: Graph, source: str, target: str, categories: dict[int, set[str]
 
 
 def astar_all(graph: Graph, source: str, target: str, categories: dict[int, set[str]], max_paths: int = 5) -> list[list[str]] | None:
-    """Return up to max_paths optimal paths from source to target using A*.
+    """Return up to max_paths shortest paths from source to target using A* search.
 
-    Returns a list of paths, where each path is a list of article names
-    from source to target (inclusive). Returns None if no path exists.
+    Extends astar() to track multiple equally-optimal predecessors per node.
+    Continues processing the heap after first reaching the target until all
+    nodes at the optimal depth have been examined, ensuring no equally-short
+    paths are missed. Stops early once max_paths have been reconstructed.
+
+    Returns a list of paths, where each path is a list of article names from
+    source to target (inclusive). Returns None if no path exists.
+
+    Preconditions:
+        - graph.contains_vertex(source)
+        - graph.contains_vertex(target)
+        - max_paths >= 1
     """
     source_vertex = graph.get_vertex_by_name(source)
     target_vertex = graph.get_vertex_by_name(target)
@@ -123,7 +143,14 @@ def astar_all(graph: Graph, source: str, target: str, categories: dict[int, set[
 
 
 def _reconstruct_path(came_from: dict[str, str], source: str, target: str) -> list[str]:
-    """Reconstruct the path from source to target using the came_from map."""
+    """Return the path from source to target by following the came_from map.
+
+    Walks backwards from target to source using came_from, then reverses the
+    result to produce a forward-ordered list of article names.
+
+    Preconditions:
+        - target is reachable from source via came_from
+    """
     path = []
     current = target
     while current != source:
@@ -135,7 +162,16 @@ def _reconstruct_path(came_from: dict[str, str], source: str, target: str) -> li
 
 
 def _reconstruct_all_paths(came_from: dict[str, set[str]], source: str, target: str, max_paths: int) -> list[list[str]]:
-    """Recursively reconstruct up to max_paths optimal paths from source to target."""
+    """Return up to max_paths paths from source to target by recursively following came_from.
+
+    At each node, iterates over all recorded predecessors to branch into every
+    equally-optimal route. Stops as soon as max_paths complete paths have been
+    collected to avoid explosion on densely connected graphs.
+
+    Preconditions:
+        - target is reachable from source via came_from
+        - max_paths >= 1
+    """
     if target == source:
         return [[source]]
 
@@ -149,6 +185,3 @@ def _reconstruct_all_paths(came_from: dict[str, set[str]], source: str, target: 
             all_paths.append(path + [target])
 
     return all_paths
-
-# Note: examine potential of using f = h, eliminating depth -- only caring about Jaccard similarity. When similarity
-# patterns are good, it provides immediate answer.
