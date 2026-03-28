@@ -127,3 +127,7 @@ class Graph:
     def get_vertex_by_name(self, article_name: str) -> _Vertex:
         """Return a vertex from the given article name."""
         return self._vertices[article_name]
+
+    def contains_vertex(self, article_name: str) -> bool:
+        """Return whether a vertex with the given article name exists in this graph."""
+        return article_name in self._vertices
