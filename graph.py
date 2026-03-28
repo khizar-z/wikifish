@@ -1,6 +1,11 @@
+"""graph.py
 
+A module containing the Graph and _Vertex classes used to represent
+the Wikipedia hyperlink network as a directed graph.
+
+Copyright (c) 2025 Khizar Zaman, Safid Musabbir, Tanishq Pol
+"""
 from __future__ import annotations
-from typing import Any
 
 
 class _Vertex:
@@ -128,3 +133,14 @@ class Graph:
     def contains_vertex(self, article_name: str) -> bool:
         """Return whether a vertex with the given article name exists in this graph."""
         return article_name in self._vertices
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
+    import python_ta
+    python_ta.check_all(config={
+        'extra-imports': ['graph', 'heapq', 'collections', 'networkx', 'dash', 'plotly', ],
+        'allowed-io': ['load_graph', 'run_analysis'],
+        'max-line-length': 120
+    })

@@ -1,3 +1,10 @@
+"""analysis.py
+
+A module containing two functions (find_paths and run_analysis)
+that generate comprehensive post-game analysis data to be displayed.
+
+Copyright (c) 2025 Khizar Zaman, Safid Musabbir, Tanishq Pol
+"""
 from __future__ import annotations
 from graph import Graph
 from pathfinding import astar_all, astar
@@ -41,6 +48,7 @@ def find_paths(
         pass
     else:
         return astar_all(graph, source, target, categories, max_paths)
+    return None
 
 
 def run_analysis(
@@ -117,3 +125,14 @@ def run_analysis(
         "move_quality": move_quality,
         "per_move_optimal": per_move_optimal,
     }
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
+    import python_ta
+    python_ta.check_all(config={
+        'extra-imports': ['graph', 'heapq', 'collections', 'networkx', 'dash', 'plotly', 'pathfinding'],
+        'allowed-io': ['load_graph', 'run_analysis'],
+        'max-line-length': 120
+    })
