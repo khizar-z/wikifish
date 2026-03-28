@@ -7,8 +7,8 @@ class _Vertex:
     """A vertex representing a Wikipedia article.
 
     Each vertex holds the name of the article and its ID. The article name is a string and the id is an int.
-    forward_link is a set containing all the articles accessible from the current one. The link between two
-    articles is bidirectional iff article A can be accessed from article B and vice versa.
+    forward_link is a set containing all the articles accessible from the current one and reverse_links is a
+    set containing all the vertices that can access the current one.
 
     Instance Attributes:
         - article_name: The name of the wikipedia page article.
@@ -89,7 +89,6 @@ class Graph:
         else:
             raise ValueError
 
-
     # def adjacent(self, item1: Any, item2: Any) -> bool:
     #     """Return whether item1 and item2 are adjacent vertices in this graph.
     #
@@ -101,7 +100,7 @@ class Graph:
     #     else:
     #         return False
 
-    def get_forward_links(self, item: Any) -> set:
+    def get_forward_links(self, item: str) -> set:
         """Return a set of the forward links of the given article.
 
         Note that the *items* are returned, not the _Vertex objects themselves.
@@ -114,7 +113,7 @@ class Graph:
         else:
             raise ValueError
 
-    def get_all_vertices(self, kind: str = '') -> set:
+    def get_all_vertices(self) -> set:
         """Return a set of all vertex items in this graph.
 
         Preconditions:
