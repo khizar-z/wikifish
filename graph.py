@@ -19,8 +19,6 @@ class _Vertex:
     Representation Invariants:
         - self not in self.forward_links
         - self not in self.reverse_links
-        -
-        -
     """
     article_name: str
     article_id: int
