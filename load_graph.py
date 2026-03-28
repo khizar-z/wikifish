@@ -3,7 +3,7 @@
 A module containing the code that loads the three dataset
 files into a Graph and categories dictionary.
 
-Copyright (c) 2025 Khizar Zaman, Safid Musabbir, Tanishq Pol
+Copyright (c) 2026 Khizar Zaman, Safid Musabbir, Tanishq Pol, Ali Mallick
 """
 from __future__ import annotations
 import sys
@@ -26,6 +26,7 @@ def load_graph(hyperlinks_file: str, page_name_file: str, categories_file: str) 
             cleaned_line = row[0].split(' ', maxsplit=1)
             articles[int(cleaned_line[0])] = cleaned_line[1]
             graph.add_vertex(cleaned_line[1], int(cleaned_line[0]))
+    print(f"  Loaded articles.")
 
     with open(hyperlinks_file) as file:
         new_hyperlinks_file = csv.reader(file)
@@ -34,6 +35,7 @@ def load_graph(hyperlinks_file: str, page_name_file: str, categories_file: str) 
             article1, article2 = cleaned_line[0], cleaned_line[1]
             if article1 != article2:
                 graph.add_forward_edge(articles[int(cleaned_line[0])], articles[int(cleaned_line[1])])
+    print(f"  Loaded edges.")
 
     categories: dict[int, set[str]] = {aid: set() for aid in articles}  # { id: set(categories) }
 
@@ -44,6 +46,7 @@ def load_graph(hyperlinks_file: str, page_name_file: str, categories_file: str) 
             for aid in parts[1:]:
                 if int(aid) in articles:
                     categories[int(aid)].add(category_name)
+    print("  Loaded categories.")
     return graph, categories
 
 

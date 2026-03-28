@@ -3,7 +3,7 @@
 A module containing the Graph and _Vertex classes used to represent
 the Wikipedia hyperlink network as a directed graph.
 
-Copyright (c) 2025 Khizar Zaman, Safid Musabbir, Tanishq Pol
+Copyright (c) 2026 Khizar Zaman, Safid Musabbir, Tanishq Pol, Ali Mallick
 """
 from __future__ import annotations
 
