@@ -5,6 +5,7 @@ the interactive website and its components.
 
 Copyright (c) 2026 Khizar Zaman, Safid Musabbir, Tanishq Pol, Ali Mallick
 """
+
 from __future__ import annotations
 import dash
 from dash import dcc, html, Input, Output, State, callback_context
