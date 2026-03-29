@@ -18,9 +18,10 @@ def load_graph(hyperlinks_file: str, page_name_file: str, categories_file: str) 
     """Return a Wikipedia graph corresponding to the given datasets.
 
     Precondition:
-        - hyperlinks_file must be a valid text file with each line representing the link between two article id
+        - hyperlinks_file must be a valid text file with each line representing the link between two article ID
         - page_name_file must be a valid text file with each line containing the article id followed by its name
-        -
+        - categories_file must be a valid text file with each line containing a category followed by the IDs of every
+        article contained in it
     """
     graph = Graph()
     articles: dict[int, str] = {}  # { id: name }

@@ -7,7 +7,7 @@ Copyright (c) 2026 Khizar Zaman, Safid Musabbir, Tanishq Pol, Ali Mallick
 """
 from __future__ import annotations
 from graph import Graph
-from pathfinding import astar_all, astar
+from pathfinding import astar_all, astar, bi_bfs_all
 
 
 def find_paths(
@@ -36,19 +36,14 @@ def find_paths(
     if max_paths == 1:
         result = None
         if algorithm == "bfs":
-            # result = bfs_single(graph, source, target)
-            # TODO: add bfs
-            pass
+            result = bi_bfs_all(graph, source, target, 1)
         else:
             result = astar(graph, source, target, categories)
         return [result] if result is not None else None
     if algorithm == "bfs":
-        # return bfs_all(graph, source, target, max_paths)
-        # TODO: add bfs
-        pass
+        return bi_bfs_all(graph, source, target, max_paths)
     else:
         return astar_all(graph, source, target, categories, max_paths)
-    return None
 
 
 def run_analysis(
