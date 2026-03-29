@@ -150,10 +150,10 @@ def astar_all(graph: Graph, source: str, target: str, categories: dict[int, set[
     return _reconstruct_all_paths(came_from, source, target, max_paths)
 
 
-def bi_bfs_all(graph1: Graph, start: str, end: str, max_path: int) -> list[list[str]] | bool:
+def bi_bfs_all(graph1: Graph, start: str, end: str, max_path: int) -> list[list[str]] | None:
     """Return up to 5 (specified by max_path) of the shortest paths from start to end using bidirectional BFS.
 
-    Expands both directions level-by-level and returns paths found in the first meeting layer. Returns False
+    Expands both directions level-by-level and returns paths found in the first meeting layer. Returns None
     if no path exists.
 
     Preconditions:
@@ -166,7 +166,7 @@ def bi_bfs_all(graph1: Graph, start: str, end: str, max_path: int) -> list[list[
     size_of_shortest_path = math.inf
 
     if start_v is None or end_v is None:
-        return False
+        return None
 
     # Sets up variables for the forward direction
     queue = deque([start])
@@ -225,7 +225,7 @@ def bi_bfs_all(graph1: Graph, start: str, end: str, max_path: int) -> list[list[
 
         if found_this_round:
             return all_path[:max_path]
-    return False
+    return None
 
 
 def _reconstruct_path(came_from: dict[str, str], source: str, target: str) -> list[str]:
