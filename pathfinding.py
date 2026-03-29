@@ -160,6 +160,8 @@ def bi_bfs_all(graph1: Graph, start: str, end: str, max_path: int) -> list[list[
         - start in graph1.get_all_vertices()
         - end in graph1.get_all_vertices()
     """
+    if start == end:
+        return [[start]]
     start_v = graph1.get_vertex_by_name(start)
     end_v = graph1.get_vertex_by_name(end)
     all_path: list[list[str]] = []

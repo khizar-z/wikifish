@@ -35,8 +35,7 @@ def find_paths(
     """
     if max_paths == 1:
         if algorithm == "bfs":
-            result = bi_bfs_all(graph, source, target, 1)
-            return result if result else None
+            return bi_bfs_all(graph, source, target, 1)
         else:
             result = astar(graph, source, target, categories)
             return [result] if result is not None else None
