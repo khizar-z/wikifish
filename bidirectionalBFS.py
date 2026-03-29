@@ -47,7 +47,7 @@ def bi_bfs_all(graph1: graph.Graph, start: str, end: str, max_path: int) -> list
                     queue.append(neighbor.article_name)
 
                     if neighbor.article_name in visited_rev:
-                        path = _build_path(neighbor.article_name, parent, parent_rev)
+                        path = _build_path_bi_bfs_all(neighbor.article_name, parent, parent_rev)
 
                         if len(path) < size_of_shortest_path:
                             size_of_shortest_path = len(path)
@@ -68,7 +68,7 @@ def bi_bfs_all(graph1: graph.Graph, start: str, end: str, max_path: int) -> list
                     queue_rev.append(neighbor.article_name)
 
                     if neighbor.article_name in visited:
-                        path = _build_path(neighbor.article_name, parent, parent_rev)
+                        path = _build_path_bi_bfs_all(neighbor.article_name, parent, parent_rev)
 
                         if len(path) < size_of_shortest_path:
                             size_of_shortest_path = len(path)
@@ -82,7 +82,7 @@ def bi_bfs_all(graph1: graph.Graph, start: str, end: str, max_path: int) -> list
     return False
 
 
-def _build_path(meeting_node: str, parent: dict[str, str], parent_rev: dict[str, str]):
+def _build_path_bi_bfs_all(meeting_node: str, parent: dict[str, str], parent_rev: dict[str, str]):
     """
     Helper function for bidirectional_bfs_all which reconstruct a path from start to end through a meeting node.
     """
