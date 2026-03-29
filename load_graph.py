@@ -16,6 +16,11 @@ csv.field_size_limit(sys.maxsize)  # We are working with ridiculous files.
 
 def load_graph(hyperlinks_file: str, page_name_file: str, categories_file: str) -> tuple[Graph, dict[int, set[str]]]:
     """Return a Wikipedia graph corresponding to the given datasets.
+
+    Precondition:
+        - hyperlinks_file must be a valid text file with each line representing the link between two article id
+        - page_name_file must be a valid text file with each line containing the article id followed by its name
+        -
     """
     graph = Graph()
     articles: dict[int, str] = {}  # { id: name }

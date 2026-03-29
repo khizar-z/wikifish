@@ -34,9 +34,6 @@ class _Vertex:
         """Initialize a new vertex with the given article name and ID.
 
         This vertex is initialized with no links.
-
-        Preconditions:
-            -
         """
         self.article_name = article_name
         self.article_id = article_id
@@ -58,7 +55,7 @@ class Graph:
     # Private Instance Attributes:
     #     - _vertices:
     #         A collection of the vertices contained in this graph.
-    #         Maps item to _Vertex object.
+    #         Maps article_name to _Vertex object.
     _vertices: dict[str, _Vertex]
 
     def __init__(self) -> None:
@@ -69,10 +66,7 @@ class Graph:
         """Add a vertex with the given article name and article id.
 
         The new vertex is not adjacent to any other vertices.
-        Do nothing if the given item is already in this graph.
-
-        Preconditions:
-            -
+        Do nothing if the given article is already in this graph.
         """
         if article_name not in self._vertices:
             self._vertices[article_name] = _Vertex(article_name, article_id)
@@ -94,35 +88,21 @@ class Graph:
         else:
             raise ValueError
 
-    # def adjacent(self, item1: Any, item2: Any) -> bool:
-    #     """Return whether item1 and item2 are adjacent vertices in this graph.
-    #
-    #     Return False if item1 or item2 do not appear as vertices in this graph.
-    #     """
-    #     if item1 in self._vertices and item2 in self._vertices:
-    #         v1 = self._vertices[item1]
-    #         return any(v2.item == item2 for v2 in v1.bidirectional)
-    #     else:
-    #         return False
-
-    def get_forward_links(self, item: str) -> set:
+    def get_forward_links(self, article_name: str) -> set:
         """Return a set of the forward links of the given article.
 
-        Note that the *items* are returned, not the _Vertex objects themselves.
+        Note that the *article_name* are returned, not the _Vertex objects themselves.
 
-        Raise a ValueError if item does not appear as a vertex in this graph.
+        Raise a ValueError if article does not appear as a vertex in this graph.
         """
-        if item in self._vertices:
-            v = self._vertices[item]
+        if article_name in self._vertices:
+            v = self._vertices[article_name]
             return {links.article_name for links in v.forward_links}
         else:
             raise ValueError
 
     def get_all_vertices(self) -> set:
         """Return a set of all vertex items in this graph.
-
-        Preconditions:
-            -
         """
         return set(self._vertices.keys())
 

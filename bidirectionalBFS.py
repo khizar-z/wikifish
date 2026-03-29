@@ -257,7 +257,7 @@ def bi_bfs_all(graph1: graph.Graph, start: str, end: str, max_path: int) -> list
                         found_this_round = True
 
         if found_this_round:
-            return all_path[:max_path], len(all_path[:max_path])
+            return all_path[:max_path]
     return False
 
 
@@ -279,29 +279,3 @@ def _build_path(meeting_node, parent, parent_rev):
         node = parent_rev[node]
 
     return path_forward + path_backward
-
-
-""" WONT WORK
-astar(graph, "Live @ Slim's / Turbulence Chest", "List of state leaders in 1470", categories)
-# ["Live @ Slim's / Turbulence Chest", 'Supergroup (music)', 'Kris Kristofferson', 'Martin Luther King', 'Religious leaders by year', 'List of religious leaders in 1701', 'List of state leaders in 1701', 'List of state leaders in 1700', ..., 'List of state leaders in 1471', 'List of state leaders in 1470']
-astar(graph, "Live @ Slim's / Turbulence Chest", "J. Michel Fournier", categories)
-# ["Live @ Slim's / Turbulence Chest", 'Les Claypool', 'George W. Bush', 'Frank McKenna', 'University of New Brunswick', 'A. Edison Stairs', 'Jean-Maurice Simard', 'Lestock Graham DesBrisay', 'J. Michel Fournier']
-astar(graph, "Isotopes of terbium", "The Possibility of Hope", categories)
-# ['Isotopes of terbium', 'Neutron', 'University of Cambridge', 'The Chronicles of Narnia: The Voyage of the Dawn Treader', 'David Arnold', 'Michael Price (composer)', 'The Possibility of Hope']
-
-"""
-
-
-g = load_graph.load_graph('wiki-topcats.txt', 'wiki-topcats-page-names.txt', 'wiki-topcats-categories.txt')
-
-bi_bfs_all(g[0], "Live @ Slim's / Turbulence Chest", "Fujiwara", 5)
-
-print("end")
-
-
-
-#  bi_bfs_all(g[0], "Isotopes of terbium", "The Possibility of Hope", 5) -> 4
-#  bi_bfs_all(g[0], "Chiasmal syndrome", "Mrio Silva (football player)", 5) -> 1
-#  bi_bfs_all(g[0], "List of vegetable oils", "Tenwa Station", 5) -> 2
-#  bi_bfs_all(g[0], "List of vegetable oils", "Mini-Mag Orion", 5) -> 1
-#  bi_bfs_all(g[0], "Live @ Slim's / Turbulence Chest", "J. Michel Fournier", 5) -> 1
