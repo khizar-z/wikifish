@@ -38,7 +38,7 @@ The **A\* heuristic** uses Jaccard overlap of Wikipedia category sets: $h(n) = 1
 **Requirements**: Python 3.11+
 
 ```bash
-git clone https://github.com/your-username/wikifish.git
+git clone https://github.com/khizar-z/wikifish.git
 cd wikifish
 pip install -r requirements.txt
 ```
