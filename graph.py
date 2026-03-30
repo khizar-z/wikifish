@@ -71,7 +71,7 @@ class Graph:
         if article_name not in self._vertices:
             self._vertices[article_name] = _Vertex(article_name, article_id)
 
-    def add_forward_edge(self, article_name1: str, article_name2: str) -> None:
+    def add_edge(self, article_name1: str, article_name2: str) -> None:
         """Add a directed edge from article 1 to article 2 in this graph.
 
         Raise a ValueError if article_name1 or article_name2 do not appear as vertices in this graph.

@@ -40,7 +40,7 @@ def load_graph(hyperlinks_file: str, page_name_file: str, categories_file: str) 
             cleaned_line = row[0].split(' ', maxsplit=1)
             article1, article2 = cleaned_line[0], cleaned_line[1]
             if article1 != article2:
-                graph.add_forward_edge(articles[int(cleaned_line[0])], articles[int(cleaned_line[1])])
+                graph.add_edge(articles[int(cleaned_line[0])], articles[int(cleaned_line[1])])
     print(f"  Loaded edges.")
 
     categories: dict[int, set[str]] = {aid: set() for aid in articles}  # { id: set(categories) }
