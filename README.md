@@ -1,4 +1,4 @@
-# WikiFish 🐟
+# WikiFish
 
 **A post-game analysis engine for WikiRace, inspired by Stockfish.**
 
