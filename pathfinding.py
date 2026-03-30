@@ -275,20 +275,20 @@ def _reconstruct_all_paths(came_from: dict[str, set[str]], source: str, target: 
     return all_paths
 
 
-def _build_path_bi_bfs_all(meeting_node: str, parent: dict[str, str], parent_rev: dict[str, str]):
+def _build_path_bi_bfs_all(meeting_node: str, parent_dict: dict[str, str], parent_rev_dict: dict[str, str]):
     """Helper function for bidirectional_bfs_all which reconstruct a path from start to end through a meeting node."""
     path_forward = []
     node = meeting_node
     while node is not None:
         path_forward.append(node)
-        node = parent[node]
+        node = parent_dict[node]
     path_forward.reverse()
 
     path_backward = []
-    node = parent_rev[meeting_node]
+    node = parent_rev_dict[meeting_node]
     while node is not None:
         path_backward.append(node)
-        node = parent_rev[node]
+        node = parent_rev_dict[node]
 
     return path_forward + path_backward
 
