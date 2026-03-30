@@ -4,6 +4,7 @@
 
 <img width="1337" height="688" alt="image" src="https://github.com/user-attachments/assets/edf7f272-fc1e-4026-b0b5-3975d6b365e9" />
 
+---
 
 WikiRace is a game where players navigate from one Wikipedia article to another using only hyperlinks, as fast as possible. WikiFish analyses your completed game — showing you the optimal path, scoring every move you made, and visualising exactly where you went wrong.
 
