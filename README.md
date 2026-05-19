@@ -35,20 +35,76 @@ WikiRace is a game where players navigate from one Wikipedia article to another 
 
 ## How it works
 
-WikiFish now supports two backends:
+WikiFish has two generations of architecture:
 
-- a legacy **SNAP backend** for the original `wiki-topcats` dataset
-- a modern **dump backend** compiled from current Wikimedia SQL dumps
+- **`wikifish-lite`** loaded the 2011 SNAP `wiki-topcats` dataset directly into Python `Graph` objects at startup. That made the original class project simple and fast, but it was tied to an old, memory-constrained subset of Wikipedia.
+- **`wikifish`** keeps the same product experience, but swaps the data layer for a compiled snapshot of modern English Wikipedia.
 
-The modern runtime compiles current English Wikipedia dumps into:
+The modern system is split into a **compile phase** and a **serve phase**.
 
-- a small SQLite catalog for title and redirect resolution
-- memory-mapped CSR adjacency arrays for forward and reverse links
-- memory-mapped category arrays for the A* heuristic
+### 1. Compile phase: turn Wikimedia dumps into queryable artifacts
 
-At runtime, WikiFish opens those artifacts read-only and performs all pathfinding locally with zero HTTP requests.
+`python3 main.py compile` parses the monthly Wikimedia SQL dumps for:
 
-The **A\* heuristic** uses Jaccard overlap of Wikipedia category sets: $h(n) = 1 - |C_n \cap C_t| / |C_n \cup C_t|$, where $C_n$ and $C_t$ are the category memberships of the current article and the target. This steers the search toward topically related articles without requiring any live network requests.
+- pages
+- redirects
+- link targets
+- hyperlinks
+- category memberships
+
+During compilation, WikiFish:
+
+1. keeps only namespace-0 article-space pages
+2. resolves redirect chains to canonical destination articles
+3. assigns every canonical article a dense integer node ID
+4. builds forward and reverse hyperlink graphs
+5. stores article-category memberships for heuristic search
+
+This produces a local snapshot directory containing:
+
+- a **SQLite catalog** for title lookup, redirect aliases, and snapshot metadata
+- **CSR-style adjacency arrays** for forward and reverse links
+- **category arrays** for the heuristic layer
+
+This compile-once layout lets the app analyze modern Wikipedia without reparsing giant dump files or depending on the live Wikipedia API at runtime.
+
+### 2. Serve phase: open the snapshot read-only
+
+`python3 main.py serve` opens the compiled snapshot and memory-maps the large graph arrays instead of rebuilding Python objects in memory.
+
+At runtime, the backend:
+
+- resolves user input like `New_York_City`, `New York City`, or redirect titles to one canonical article
+- answers neighbor lookups from read-only graph arrays
+- exposes category memberships for the heuristic search
+- serves all analysis locally with **zero HTTP requests**
+
+The combination of a small SQLite catalog and memory-mapped binary arrays scales far better than the original object-heavy `wikifish-lite` graph while still keeping lookups simple and deterministic.
+
+### 3. Pathfinding and evaluation
+
+WikiFish supports two exact shortest-path algorithms:
+
+- **Bidirectional BFS** as the baseline exact shortest-path solver
+- **A\*** with a Jaccard category heuristic to prioritize topically related articles
+
+The A\* heuristic is:
+
+$h(n) = 1 - |C_n \cap C_t| / |C_n \cup C_t|$
+
+where $C_n$ and $C_t$ are the category memberships of the current article and the target article.
+
+Both algorithms can return up to 5 equally-short optimal paths. After finding the best route, WikiFish scores the player's run move-by-move by computing exact distance-to-target values and reconstructing the best continuation from each position. The current implementation uses a targeted reverse search so it preserves exact scoring while avoiding unnecessary work on the full Wikipedia graph.
+
+### 4. Why these design choices
+
+- **Monthly Wikimedia dumps over the live API**: reproducible results, no rate limits, no network dependency, and a clearly labeled snapshot date
+- **Dense integer node IDs over title-keyed graph objects**: lower memory overhead and faster traversal on a graph with millions of articles
+- **Memory-mapped CSR arrays over in-memory Python sets**: practical scaling to full English Wikipedia while keeping the runtime read-only and simple
+- **SQLite for metadata, not graph traversal**: SQL is great for title/redirect lookup, while raw arrays are better for hot path search
+- **Reverse graph storage**: makes bidirectional BFS and exact move evaluation efficient
+
+In short, `wikifish-lite` was a small in-memory class project graph; `wikifish` is a snapshot compiler plus local graph-search runtime designed to make modern Wikipedia analysis feasible on consumer hardware.
 
 ---
 
