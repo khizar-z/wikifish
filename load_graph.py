@@ -10,6 +10,7 @@ import sys
 import csv
 
 from graph import Graph
+from wiki_backend import SnapBackend
 
 csv.field_size_limit(sys.maxsize)  # We are working with ridiculous files.
 
@@ -54,6 +55,12 @@ def load_graph(hyperlinks_file: str, page_name_file: str, categories_file: str) 
                     categories[int(aid)].add(category_name)
     print("  Loaded categories.")
     return graph, categories
+
+
+def load_snap_backend(hyperlinks_file: str, page_name_file: str, categories_file: str) -> SnapBackend:
+    """Return a SnapBackend built from the legacy wiki-topcats dataset."""
+    graph, categories = load_graph(hyperlinks_file, page_name_file, categories_file)
+    return SnapBackend(graph, categories)
 
 
 if __name__ == '__main__':

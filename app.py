@@ -1,148 +1,147 @@
 """app.py
 
-A module containing the Dash app server that displays and runs
-the interactive website and its components.
-
-Copyright (c) 2026 Khizar Zaman, Safid Musabbir, Tanishq Pol, Ali Mallick
+Dash application for WikiFish.
 """
-
 from __future__ import annotations
+
 import dash
-from dash import dcc, html, Input, Output, State, callback_context
+from dash import Input, Output, State, callback_context, dcc, html
 import plotly.graph_objects as go
 
 from analysis import run_analysis
 from graph_viz import make_evaluation_chart, make_subgraph_figure
+from wiki_backend import WikiBackend, snapshot_label
 
-# --- Load graph once at startup ---
-graph = None
-categories = None
+backend: WikiBackend | None = None
+startup_notice_text = 'Graph loaded and ready.'
 
 
-def init(g, c):
-    """Initialize the Dash app."""
-    global graph, categories
-    graph = g
-    categories = c
+def configure_backend(loaded_backend: WikiBackend) -> None:
+    """Attach a backend to the Dash app without starting the server."""
+    global backend, startup_notice_text
+    backend = loaded_backend
+    startup_notice_text = f'{snapshot_label(backend.snapshot_info())} loaded and ready.'
+    app.layout = _build_layout()
+
+
+def init(loaded_backend: WikiBackend) -> None:
+    """Initialise the Dash app and start the server."""
+    configure_backend(loaded_backend)
     app.run(debug=False)
 
 
 QUALITY_COLOURS = {
-    "OPTIMAL": "#2ecc71",
-    "GREAT":   "#1abc9c",
-    "NEUTRAL": "#f39c12",
-    "BLUNDER": "#e74c3c",
-    "UNKNOWN": "#95a5a6",
+    'OPTIMAL': '#2ecc71',
+    'GREAT': '#1abc9c',
+    'NEUTRAL': '#f39c12',
+    'BLUNDER': '#e74c3c',
+    'UNKNOWN': '#95a5a6',
 }
 
 app = dash.Dash(__name__)
 
-app.layout = html.Div(
-    style={'backgroundColor': '#1e1e1e', 'minHeight': '100vh', 'padding': '30px',
-           'fontFamily': 'sans-serif', 'color': 'white'},
-    children=[
-        html.H1('WikiFish', style={'marginBottom': '4px'}),
-        html.P('Post-game analysis for WikiRace', style={'color': '#aaa', 'marginTop': 0}),
 
-        html.Div(
-            id='startup-notice',
-            children='Graph loaded and ready.',
-            style={'color': 'limegreen', 'fontSize': '13px', 'marginBottom': '10px'}
-        ),
+def _build_layout() -> html.Div:
+    """Build the Dash layout for the current backend."""
+    return html.Div(
+        style={'backgroundColor': '#1e1e1e', 'minHeight': '100vh', 'padding': '30px',
+               'fontFamily': 'sans-serif', 'color': 'white'},
+        children=[
+            html.H1('WikiFish', style={'marginBottom': '4px'}),
+            html.P('Post-game analysis for WikiRace', style={'color': '#aaa', 'marginTop': 0}),
 
-        html.Hr(style={'borderColor': '#333'}),
-
-        # --- Input form ---
-        html.Div(style={'maxWidth': '600px', 'marginBottom': '30px'}, children=[
-            html.H3('Enter your game'),
-            html.P('Paste your path below, one article per line:', style={'color': '#aaa'}),
-            dcc.Textarea(
-                id='path-input',
-                placeholder='France\nMontpellier\nCourtyard\nPatio',
-                style={
-                    'width': '100%', 'height': '160px', 'backgroundColor': '#2a2a2a',
-                    'color': 'white', 'border': '1px solid #444', 'borderRadius': '6px',
-                    'padding': '10px', 'fontSize': '14px', 'resize': 'vertical'
-                }
+            html.Div(
+                id='startup-notice',
+                children=startup_notice_text,
+                style={'color': 'limegreen', 'fontSize': '13px', 'marginBottom': '10px'}
             ),
-            html.Div(style={'display': 'flex', 'gap': '20px', 'marginTop': '12px',
-                            'alignItems': 'center', 'flexWrap': 'wrap'}, children=[
-                html.Div([
-                    html.Label('Algorithm', style={'display': 'block', 'marginBottom': '4px',
-                                                   'color': '#aaa', 'fontSize': '13px'}),
-                    dcc.Dropdown(
-                        id='algorithm-input',
-                        options=[
-                            {'label': 'Bidirectional BFS', 'value': 'bfs'},
-                            {'label': 'A* (category heuristic)', 'value': 'astar'},
-                        ],
-                        value='bfs',
-                        clearable=False,
-                        style={'width': '220px', 'backgroundColor': '#2a2a2a',
-                               'color': 'black', 'border': 'none'}
-                    ),
+
+            html.Hr(style={'borderColor': '#333'}),
+
+            html.Div(style={'maxWidth': '600px', 'marginBottom': '30px'}, children=[
+                html.H3('Enter your game'),
+                html.P('Paste your path below, one article per line:', style={'color': '#aaa'}),
+                dcc.Textarea(
+                    id='path-input',
+                    placeholder='France\nMontpellier\nCourtyard\nPatio',
+                    style={
+                        'width': '100%', 'height': '160px', 'backgroundColor': '#2a2a2a',
+                        'color': 'white', 'border': '1px solid #444', 'borderRadius': '6px',
+                        'padding': '10px', 'fontSize': '14px', 'resize': 'vertical'
+                    }
+                ),
+                html.Div(style={'display': 'flex', 'gap': '20px', 'marginTop': '12px',
+                                'alignItems': 'center', 'flexWrap': 'wrap'}, children=[
+                    html.Div([
+                        html.Label('Algorithm', style={'display': 'block', 'marginBottom': '4px',
+                                                       'color': '#aaa', 'fontSize': '13px'}),
+                        dcc.Dropdown(
+                            id='algorithm-input',
+                            options=[
+                                {'label': 'Bidirectional BFS', 'value': 'bfs'},
+                                {'label': 'A* (category heuristic)', 'value': 'astar'},
+                            ],
+                            value='bfs',
+                            clearable=False,
+                            style={'width': '220px', 'backgroundColor': '#2a2a2a',
+                                   'color': 'black', 'border': 'none'}
+                        ),
+                    ]),
+                    html.Div([
+                        html.Label('Optimal paths to show', style={'display': 'block', 'marginBottom': '4px',
+                                                                   'color': '#aaa', 'fontSize': '13px'}),
+                        dcc.Slider(
+                            id='max-paths-input',
+                            min=1, max=5, step=1, value=3,
+                            marks={i: {'label': str(i), 'style': {'color': 'white'}} for i in range(1, 6)},
+                            tooltip=False,
+                        ),
+                    ], style={'flex': 1, 'minWidth': '200px'}),
                 ]),
-                html.Div([
-                    html.Label('Optimal paths to show', style={'display': 'block', 'marginBottom': '4px',
-                                                               'color': '#aaa', 'fontSize': '13px'}),
-                    dcc.Slider(
-                        id='max-paths-input',
-                        min=1, max=5, step=1, value=3,
-                        marks={i: {'label': str(i), 'style': {'color': 'white'}} for i in range(1, 6)},
-                        tooltip=False,
-                    ),
-                ], style={'flex': 1, 'minWidth': '200px'}),
+                html.Button(
+                    'Analyse', id='analyse-button', n_clicks=0,
+                    style={
+                        'marginTop': '16px', 'padding': '10px 28px', 'fontSize': '15px',
+                        'backgroundColor': '#2980b9', 'color': 'white', 'border': 'none',
+                        'borderRadius': '6px', 'cursor': 'pointer'
+                    }
+                ),
+                html.Div(id='error-msg', style={'color': '#e74c3c', 'marginTop': '10px'}),
             ]),
-            html.Button(
-                'Analyse', id='analyse-button', n_clicks=0,
-                style={
-                    'marginTop': '16px', 'padding': '10px 28px', 'fontSize': '15px',
-                    'backgroundColor': '#2980b9', 'color': 'white', 'border': 'none',
-                    'borderRadius': '6px', 'cursor': 'pointer'
-                }
+
+            html.Hr(style={'borderColor': '#333'}),
+
+            dcc.Loading(
+                id='loading-results',
+                type='circle',
+                color='steelblue',
+                children=html.Div(id='results-area', style={'display': 'none'}, children=[
+                    html.Div(id='summary-bar', style={'marginBottom': '20px'}),
+                    dcc.Graph(id='eval-chart'),
+                    html.Div(style={'display': 'flex', 'alignItems': 'center', 'gap': '16px',
+                                    'justifyContent': 'center', 'marginTop': '4px'}, children=[
+                        html.P('Click any point on the chart above to inspect that move.',
+                               style={'color': '#aaa', 'margin': 0}),
+                        html.Button('Reset view', id='reset-button', n_clicks=0,
+                                    style={'padding': '4px 14px', 'fontSize': '13px',
+                                           'backgroundColor': '#333', 'color': '#aaa',
+                                           'border': '1px solid #555', 'borderRadius': '4px',
+                                           'cursor': 'pointer'}),
+                    ]),
+                    dcc.Graph(id='subgraph-chart'),
+                    html.Div(id='move-inspect-panel', style={'marginTop': '16px'}),
+                    html.Div(id='move-breakdown', style={'marginTop': '20px'}),
+                    html.Div(id='optimal-paths-list', style={'marginTop': '20px'}),
+                ])
             ),
-            html.Div(id='error-msg', style={'color': '#e74c3c', 'marginTop': '10px'}),
-        ]),
 
-        html.Hr(style={'borderColor': '#333'}),
+            dcc.Store(id='analysis-store'),
+            dcc.Store(id='click-store', data=None),
+        ]
+    )
 
-        # --- Results area (hidden until analysis runs) ---
-        dcc.Loading(
-            id='loading-results',
-            type='circle',
-            color='steelblue',
-            children=html.Div(id='results-area', style={'display': 'none'}, children=[
 
-                html.Div(id='summary-bar', style={'marginBottom': '20px'}),
-
-                dcc.Graph(id='eval-chart'),
-
-                html.Div(style={'display': 'flex', 'alignItems': 'center', 'gap': '16px',
-                                'justifyContent': 'center', 'marginTop': '4px'}, children=[
-                    html.P('Click any point on the chart above to inspect that move.',
-                           style={'color': '#aaa', 'margin': 0}),
-                    html.Button('Reset view', id='reset-button', n_clicks=0,
-                                style={'padding': '4px 14px', 'fontSize': '13px',
-                                       'backgroundColor': '#333', 'color': '#aaa',
-                                       'border': '1px solid #555', 'borderRadius': '4px',
-                                       'cursor': 'pointer'}),
-                ]),
-
-                dcc.Graph(id='subgraph-chart'),
-
-                html.Div(id='move-inspect-panel', style={'marginTop': '16px'}),
-
-                html.Div(id='move-breakdown', style={'marginTop': '20px'}),
-
-                html.Div(id='optimal-paths-list', style={'marginTop': '20px'}),
-            ])
-        ),
-
-        # Stores
-        dcc.Store(id='analysis-store'),
-        dcc.Store(id='click-store', data=None),
-    ]
-)
+app.layout = _build_layout()
 
 
 @app.callback(
@@ -155,28 +154,39 @@ app.layout = html.Div(
     State('max-paths-input', 'value'),
     prevent_initial_call=True
 )
-def run(n_clicks, path_text, algorithm, max_paths):
-    """Validate the user's input and run post-game analysis on button click.
+def run(n_clicks: int, path_text: str | None, algorithm: str, max_paths: int) -> tuple[dict | None, str, dict]:
+    """Validate the user's input and run post-game analysis on button click."""
+    del n_clicks
 
-    Parses path_text into a list of article names, checks that each article
-    exists in the graph, and calls run_analysis(). Serialises the results into
-    a JSON-compatible dict for storage in dcc.Store. Returns an error message
-    and keeps the results area hidden if validation fails.
-    """
+    if backend is None:
+        return None, 'Backend not loaded.', {'display': 'none'}
+
     if not path_text or not path_text.strip():
         return None, 'Please enter a path.', {'display': 'none'}
 
-    player_path = [line.strip() for line in path_text.strip().splitlines() if line.strip()]
-
-    if len(player_path) < 2:
+    raw_path = [line.strip() for line in path_text.strip().splitlines() if line.strip()]
+    if len(raw_path) < 2:
         return None, 'Path must have at least two articles.', {'display': 'none'}
 
-    missing = [a for a in player_path if not graph.contains_vertex(a)]
+    resolved_path = []
+    missing = []
+    for raw_title in raw_path:
+        resolved = backend.resolve_title(raw_title)
+        if resolved is None:
+            missing.append(raw_title)
+        else:
+            resolved_path.append(resolved)
+
     if missing:
-        msg = f'Articles not found in dataset: {", ".join(missing)}'
+        msg = f'Articles not found in snapshot: {", ".join(missing)}'
         return None, msg, {'display': 'none'}
 
-    results = run_analysis(graph, categories, player_path, algorithm, max_paths or 3)
+    results = run_analysis(
+        backend,
+        [page.node_id for page in resolved_path],
+        algorithm,
+        max_paths or 3
+    )
 
     store = {
         'player_path': results['player_path'],
@@ -184,9 +194,8 @@ def run(n_clicks, path_text, algorithm, max_paths):
         'optimal_length': results['optimal_length'],
         'hop_counts': results['hop_counts'],
         'move_quality': results['move_quality'],
-        'per_move_optimal': [p for p in results['per_move_optimal']],
+        'per_move_optimal': [path for path in results['per_move_optimal']],
     }
-
     return store, '', {'display': 'block'}
 
 
@@ -197,13 +206,9 @@ def run(n_clicks, path_text, algorithm, max_paths):
     Input('analysis-store', 'data'),
     prevent_initial_call=True
 )
-def update_click_store(click_data, reset_clicks, store):
-    """Track the active move index for chart inspection.
-
-    Sets the click-store to the x-index of the clicked point on the evaluation
-    chart. Clears it to None when the Reset button is pressed or when a new
-    analysis is run, restoring the subgraph to full overview mode.
-    """
+def update_click_store(click_data: dict | None, reset_clicks: int, store: dict | None) -> int | None:
+    """Track the active move index for chart inspection."""
+    del reset_clicks, store
     triggered = callback_context.triggered[0]['prop_id']
     if 'reset-button' in triggered or 'analysis-store' in triggered:
         return None
@@ -223,15 +228,8 @@ def update_click_store(click_data, reset_clicks, store):
     Input('click-store', 'data'),
     prevent_initial_call=True
 )
-def update_visuals(store, move_index):
-    """Render all visual components from the analysis store.
-
-    Fires when a new analysis is stored or when click-store changes. Rebuilds
-    the evaluation chart, subgraph, summary bar, move breakdown table, optimal
-    paths list, and move inspect panel. When move_index is set, the subgraph
-    switches to remaining-path mode and the inspect panel shows per-move detail;
-    when None, both show the full overview.
-    """
+def update_visuals(store: dict | None, move_index: int | None) -> tuple[go.Figure, go.Figure, html.Div | list, html.Div | list, html.Div | list, html.Div | list]:
+    """Render all visual components from the analysis store."""
     if store is None:
         empty = go.Figure()
         return empty, empty, [], [], [], []
@@ -251,7 +249,6 @@ def update_visuals(store, move_index):
         per_move_optimal
     )
 
-    # Summary bar
     player_hops = len(player_path) - 1
     summary = html.Div(style={'display': 'flex', 'gap': '30px', 'marginBottom': '10px'}, children=[
         html.Div([html.Div(str(player_hops), style={'fontSize': '36px', 'fontWeight': 'bold'}),
@@ -264,7 +261,6 @@ def update_visuals(store, move_index):
                   html.Div('Extra hops', style={'color': '#aaa', 'fontSize': '13px'})]),
     ])
 
-    # Move breakdown table
     rows = []
     for i, (article, quality) in enumerate(zip(player_path[:-1], move_quality)):
         next_article = player_path[i + 1]
@@ -285,7 +281,6 @@ def update_visuals(store, move_index):
                                 'backgroundColor': '#2a2a2a', 'borderRadius': '6px'})
     ])
 
-    # Optimal paths list
     path_items = []
     for i, path in enumerate(optimal_paths):
         path_items.append(html.Div(style={'marginBottom': '12px'}, children=[
@@ -298,7 +293,6 @@ def update_visuals(store, move_index):
         html.Div(path_items if path_items else 'No path found.')
     ])
 
-    # Move inspect panel
     inspect_panel = []
     if move_index is not None and move_index < len(player_path) - 1:
         current_article = player_path[move_index]
@@ -321,7 +315,6 @@ def update_visuals(store, move_index):
             ]),
         ]
 
-        # Only show the best available move when the player did not pick optimally
         if not same_move and optimal_next:
             rows_inspect.append(html.Tr([
                 html.Td('Best available move', style={'padding': '8px 12px', 'color': '#aaa'}),
@@ -352,15 +345,3 @@ def update_visuals(store, move_index):
         ])
 
     return eval_fig, subgraph_fig, summary, breakdown, paths_section, inspect_panel
-
-
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod()
-    import python_ta
-    python_ta.check_all(config={
-        'extra-imports': ['graph', 'heapq', 'collections', 'networkx', 'dash', 'plotly', ],
-        'allowed-io': ['load_graph', 'run_analysis'],
-        'max-line-length': 120
-    })
-    app.run(debug=True)

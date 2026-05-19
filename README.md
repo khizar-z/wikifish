@@ -27,13 +27,26 @@ WikiRace is a game where players navigate from one Wikipedia article to another 
 - **Position evaluation chart** — a Plotly line chart plotting your hop-count over each move with an optimal reference line overlaid, styled after Chess.com's accuracy graph
 - **Interactive path network** — a NetworkX/Plotly graph showing your path vs the optimal path with nodes colour-coded by role; click any move to zoom into that step
 - **Move inspection** — click any point on the chart to see the best available move, your move quality, and the full optimal path from that position
+- **Snapshot-backed runtime** — compile a current English Wikipedia dump once, then serve analysis from read-only runtime artifacts
+- **Title resolution** — accepts canonical article titles, underscore variants, and redirect aliases
 - **Web interface** — fully browser-based, built with Dash; no frontend code required
 
 ---
 
 ## How it works
 
-Wikipedia's hyperlink network is modelled as a **directed graph** with 1.79 million nodes and 28.5 million edges, loaded from the [SNAP wiki-topcats dataset](https://snap.stanford.edu/data/wiki-topcats.html). The graph is loaded into memory at startup and all pathfinding runs in-memory with zero HTTP requests.
+WikiFish now supports two backends:
+
+- a legacy **SNAP backend** for the original `wiki-topcats` dataset
+- a modern **dump backend** compiled from current Wikimedia SQL dumps
+
+The modern runtime compiles current English Wikipedia dumps into:
+
+- a small SQLite catalog for title and redirect resolution
+- memory-mapped CSR adjacency arrays for forward and reverse links
+- memory-mapped category arrays for the A* heuristic
+
+At runtime, WikiFish opens those artifacts read-only and performs all pathfinding locally with zero HTTP requests.
 
 The **A\* heuristic** uses Jaccard overlap of Wikipedia category sets: $h(n) = 1 - |C_n \cap C_t| / |C_n \cup C_t|$, where $C_n$ and $C_t$ are the category memberships of the current article and the target. This steers the search toward topically related articles without requiring any live network requests.
 
@@ -49,27 +62,51 @@ cd wikifish
 pip install -r requirements.txt
 ```
 
-### Dataset
+### Modern Snapshot Workflow
 
-Download the three wiki-topcats files from [SNAP](https://snap.stanford.edu/data/wiki-topcats.html) and place them in the project root:
+Download the following English Wikipedia SQL dumps into one directory:
+
+- `*-page.sql.gz`
+- `*-redirect.sql.gz`
+- `*-linktarget.sql.gz`
+- `*-pagelinks.sql.gz`
+- `*-categorylinks.sql.gz`
+
+Then compile them into WikiFish runtime artifacts:
+
+```bash
+python3 main.py compile --dump-dir /path/to/enwiki-dump --output-dir data/enwiki_snapshot
+```
+
+Once compilation completes, start the app:
+
+```bash
+python3 main.py serve --data-dir data/enwiki_snapshot
+```
+
+If you omit `serve`, `python3 main.py` will use the compiled snapshot from `data/enwiki_snapshot` by default.
+
+### Legacy SNAP Workflow
+
+The original `wikifish-lite` dataset still works as a fallback. Download the three [SNAP wiki-topcats](https://snap.stanford.edu/data/wiki-topcats.html) files and place them in the project root:
 
 - `wiki-topcats.txt`
 - `wiki-topcats-page-names.txt`
 - `wiki-topcats-categories.txt`
 
-> **Note**: The uncompressed files are ~400 MB total. Graph loading takes 30–60 seconds on first run.
+If no compiled snapshot exists, `python3 main.py` falls back to this legacy backend automatically.
 
 ---
 
 ## Usage
 
 ```bash
-python main.py
+python3 main.py
 ```
 
-Once you see `Starting server at http://127.0.0.1:8050`, open that URL in your browser.
+Once you see `Starting server at http://127.0.0.1:8050`, open that URL in your browser. The startup banner will show which snapshot is currently loaded.
 
-1. Paste your WikiRace path into the text area, one article per line (names must match Wikipedia exactly, case-sensitive)
+1. Paste your WikiRace path into the text area, one article per line
 2. Choose an algorithm: **Bidirectional BFS** or **A\* (category heuristic)**
 3. Select how many optimal paths to show (1–5)
 4. Click **Analyse**
@@ -78,20 +115,26 @@ Once you see `Starting server at http://127.0.0.1:8050`, open that URL in your b
 - Click any point on the evaluation chart to inspect that move — the path graph zooms in and a detail panel appears
 - Click **Reset view** to return to the full path overview
 
+**Title lookup notes:**
+- Underscores and spaces are treated interchangeably
+- Redirect titles resolve to their canonical target article automatically
+
 ---
 
 ## Project structure
 
 ```
 wikifish/
-├── main.py          # Entry point — loads graph and starts Dash server
-├── app.py           # Dash web application, layout and callbacks
-├── graph.py         # Graph and _Vertex classes
-├── load_graph.py    # Dataset loading into Graph + categories dict
-├── pathfinding.py   # Bidirectional BFS, A*, Jaccard heuristic
-├── analysis.py      # Post-game analysis logic, move quality classification
-├── graph_viz.py     # Plotly/NetworkX chart and subgraph figure builders
-└── requirements.txt
+├── main.py            # CLI for compiling dumps and starting the Dash app
+├── app.py             # Dash web application, layout and callbacks
+├── wiki_backend.py    # Backend interface plus SNAP and dump runtime loaders
+├── dump_compiler.py   # SQL dump compiler for modern Wikimedia snapshots
+├── load_graph.py      # Legacy SNAP dataset loader
+├── graph.py           # Legacy Graph and _Vertex classes
+├── pathfinding.py     # Backend-based BFS, A*, and reverse-distance helpers
+├── analysis.py        # Post-game analysis logic and move scoring
+├── graph_viz.py       # Plotly/NetworkX chart and subgraph figure builders
+└── tests/             # Fixture-driven regression and integration tests
 ```
 
 ---
@@ -100,10 +143,10 @@ wikifish/
 
 | Algorithm | Completeness | Optimality | Notes |
 |---|---|---|---|
-| Bidirectional BFS | ✓ | ✓ | Expands from both ends; finds all shortest paths |
-| A\* (Jaccard) | ✓ | ✓ | Faster on topically adjacent pairs; degrades to BFS when categories don't overlap |
+| Bidirectional BFS | ✓ | ✓ | Exact shortest paths over the local snapshot backend |
+| A\* (Jaccard) | ✓ | ✓ | Uses category overlap from the local snapshot to guide search |
 
-Both algorithms support multi-path mode, tracking all equally-optimal predecessors per node and reconstructing up to `max_paths` shortest routes.
+Both algorithms support multi-path mode, returning up to `max_paths` shortest routes.
 
 ---
 
@@ -112,7 +155,8 @@ Both algorithms support multi-path mode, tracking all equally-optimal predecesso
 - [Dash](https://dash.plotly.com/) — web interface
 - [Plotly](https://plotly.com/python/) — interactive charts
 - [NetworkX](https://networkx.org/) — graph layout for the path visualisation
-- [SNAP wiki-topcats](https://snap.stanford.edu/data/wiki-topcats.html) — Wikipedia hyperlink dataset (Yin et al., KDD 2017)
+- [SNAP wiki-topcats](https://snap.stanford.edu/data/wiki-topcats.html) — legacy Wikipedia hyperlink dataset (Yin et al., KDD 2017)
+- [Wikimedia dumps](https://meta.wikimedia.org/wiki/Data_dumps/What's_available_for_download) — current English Wikipedia SQL dump sources
 
 ---
 

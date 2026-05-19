@@ -1,132 +1,111 @@
 """analysis.py
 
-A module containing two functions (find_paths and run_analysis)
-that generate comprehensive post-game analysis data to be displayed.
-
-Copyright (c) 2026 Khizar Zaman, Safid Musabbir, Tanishq Pol, Ali Mallick
+Post-game analysis logic for WikiFish.
 """
 from __future__ import annotations
-from graph import Graph
-from pathfinding import astar_all, astar, bi_bfs_all
+
+from wiki_backend import WikiBackend
+from pathfinding import (
+    astar,
+    astar_all,
+    bi_bfs_all,
+    build_path_from_next_hops,
+    reverse_distances_for_sources,
+)
 
 
 def find_paths(
-        graph: Graph,
-        categories: dict[int, set[str]],
-        source: str,
-        target: str,
-        algorithm: str,
-        max_paths: int
-) -> list[list[str]] | None:
-    """Return up to max_paths shortest paths from source to target.
-
-    Routes to the appropriate pathfinding function based on algorithm and
-    max_paths. When max_paths is 1, uses the leaner single-path functions
-    (bfs() or astar()) to avoid the overhead of multi-predecessor tracking.
-
-    Returns a list of paths (each a list of article names from source to target
-    inclusive), or None if no path exists.
-
-    Preconditions:
-        - graph.contains_vertex(source)
-        - graph.contains_vertex(target)
-        - algorithm in {'bfs', 'astar'}
-        - max_paths >= 1
-    """
+    backend: WikiBackend,
+    source: int,
+    target: int,
+    algorithm: str,
+    max_paths: int
+) -> list[list[int]] | None:
+    """Return up to max_paths shortest paths from source to target."""
     if max_paths == 1:
-        if algorithm == "bfs":
-            return bi_bfs_all(graph, source, target, 1)
-        else:
-            result = astar(graph, source, target, categories)
-            return [result] if result is not None else None
-    if algorithm == "bfs":
-        return bi_bfs_all(graph, source, target, max_paths)
-    else:
-        return astar_all(graph, source, target, categories, max_paths)
+        if algorithm == 'bfs':
+            return bi_bfs_all(backend, source, target, 1)
+        result = astar(backend, source, target)
+        return [result] if result is not None else None
+
+    if algorithm == 'bfs':
+        return bi_bfs_all(backend, source, target, max_paths)
+    return astar_all(backend, source, target, max_paths)
 
 
 def run_analysis(
-        graph: Graph,
-        categories: dict[int, set[str]],
-        player_path: list[str],
-        algorithm: str,
-        max_paths: int
+    backend: WikiBackend,
+    player_path_ids: list[int],
+    algorithm: str,
+    max_paths: int
 ) -> dict:
-    """Run full post-game analysis on a player's WikiRace path and return structured results.
+    """Run full post-game analysis and return structured results for the UI."""
+    source = player_path_ids[0]
+    target = player_path_ids[-1]
 
-    For each article in player_path, computes the exact hop-count to the target
-    and classifies the transition to the next article as GREAT, OPTIMAL, NEUTRAL,
-    BLUNDER, or UNKNOWN. Also finds up to max_paths globally optimal paths from
-    the start to the target for comparison.
-
-    Returns a dict with the following keys:
-        - player_path:     list[str] — the original input path
-        - optimal_paths:   list[list[str]] | None — up to max_paths optimal routes
-        - optimal_length:  int | None — hop-count of the shortest optimal path
-        - hop_counts:      list[int] — hop-count to target at each step of player_path
-        - move_quality:    list[str] — quality label for each move (len = len(player_path) - 1)
-        - per_move_optimal: list[list[str] | None] — optimal path onward from each article
-
-    Preconditions:
-        - len(player_path) >= 2
-        - all articles in player_path exist in graph
-        - algorithm in {'bfs', 'astar'}
-        - max_paths >= 1
-    """
-    print(f"\nAnalysing: {player_path[0]} → {player_path[-1]}")
+    print(f"\nAnalysing: {backend.canonical_title(source)} → {backend.canonical_title(target)}")
     print(f"Finding optimal path(s) with max_paths={max_paths}...")
-    source = player_path[0]
-    target = player_path[-1]
 
-    optimal_paths = find_paths(graph, categories, source, target, algorithm, max_paths)
-    optimal_length = len(optimal_paths[0]) - 1 if optimal_paths else None
-    print(f"  Optimal: {len(optimal_paths[0]) - 1} hops" if optimal_paths else "  No path found.")
+    optimal_paths_ids = find_paths(backend, source, target, algorithm, max_paths)
+    optimal_paths = _paths_to_titles(backend, optimal_paths_ids)
+    optimal_length = len(optimal_paths_ids[0]) - 1 if optimal_paths_ids else None
+    print(f"  Optimal: {optimal_length} hops" if optimal_paths_ids else "  No path found.")
 
+    distances, next_hops = reverse_distances_for_sources(backend, target, player_path_ids)
+    player_path = [backend.canonical_title(node_id) for node_id in player_path_ids]
     hop_counts = []
     move_quality = []
     per_move_optimal = []
 
-    for i, article in enumerate(player_path):
-        print(f"  Evaluating move {i + 1}/{len(player_path)}: {article}...")
-        paths_from_here = find_paths(graph, categories, article, target, algorithm, 1)
-        dist = len(paths_from_here[0]) - 1 if paths_from_here else None
-        hop_counts.append(dist if dist is not None else 0)
-        per_move_optimal.append(paths_from_here[0] if paths_from_here else None)
+    for i, node_id in enumerate(player_path_ids):
+        article = backend.canonical_title(node_id)
+        print(f"  Evaluating move {i + 1}/{len(player_path_ids)}: {article}...")
 
-        if i < len(player_path) - 1:
-            next_article = player_path[i + 1]
-            paths_from_next = find_paths(graph, categories, next_article, target, algorithm, 1)
-            dist_next = len(paths_from_next[0]) - 1 if paths_from_next else None
+        distance = distances.get(node_id)
+        hop_counts.append(distance if distance is not None else 0)
 
-            if dist is None or dist_next is None:
-                quality = "UNKNOWN"
-            elif dist_next < dist - 1:
-                quality = "GREAT"
-            elif dist_next == dist - 1:
-                quality = "OPTIMAL"
-            elif dist_next == dist:
-                quality = "NEUTRAL"
-            else:
-                quality = "BLUNDER"
+        optimal_from_here_ids = build_path_from_next_hops(node_id, target, next_hops)
+        per_move_optimal.append(
+            _path_to_titles(backend, optimal_from_here_ids) if optimal_from_here_ids is not None else None
+        )
 
+        if i < len(player_path_ids) - 1:
+            next_distance = distances.get(player_path_ids[i + 1])
+            quality = _classify_move(distance, next_distance)
             move_quality.append(quality)
 
     return {
-        "player_path": player_path,
-        "optimal_paths": optimal_paths,
-        "optimal_length": optimal_length,
-        "hop_counts": hop_counts,
-        "move_quality": move_quality,
-        "per_move_optimal": per_move_optimal,
+        'player_path': player_path,
+        'optimal_paths': optimal_paths,
+        'optimal_length': optimal_length,
+        'hop_counts': hop_counts,
+        'move_quality': move_quality,
+        'per_move_optimal': per_move_optimal,
     }
 
 
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod()
-    import python_ta
-    python_ta.check_all(config={
-        'extra-imports': ['graph', 'heapq', 'collections', 'networkx', 'dash', 'plotly', 'pathfinding'],
-        'allowed-io': ['load_graph', 'run_analysis'],
-        'max-line-length': 120
-    })
+def _classify_move(distance: int | None, next_distance: int | None) -> str:
+    """Return a move-quality label based on exact target distances."""
+    if distance is None or next_distance is None:
+        return 'UNKNOWN'
+    if next_distance < distance - 1:
+        return 'GREAT'
+    if next_distance == distance - 1:
+        return 'OPTIMAL'
+    if next_distance == distance:
+        return 'NEUTRAL'
+    return 'BLUNDER'
+
+
+def _path_to_titles(backend: WikiBackend, path: list[int] | None) -> list[str] | None:
+    """Convert a single path of node ids to titles."""
+    if path is None:
+        return None
+    return [backend.canonical_title(node_id) for node_id in path]
+
+
+def _paths_to_titles(backend: WikiBackend, paths: list[list[int]] | None) -> list[list[str]] | None:
+    """Convert a list of paths from node ids to titles."""
+    if paths is None:
+        return None
+    return [[backend.canonical_title(node_id) for node_id in path] for path in paths]
