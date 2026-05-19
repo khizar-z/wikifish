@@ -157,9 +157,3 @@ Both algorithms support multi-path mode, returning up to `max_paths` shortest ro
 - [NetworkX](https://networkx.org/) — graph layout for the path visualisation
 - [SNAP wiki-topcats](https://snap.stanford.edu/data/wiki-topcats.html) — legacy Wikipedia hyperlink dataset (Yin et al., KDD 2017)
 - [Wikimedia dumps](https://meta.wikimedia.org/wiki/Data_dumps/What's_available_for_download) — current English Wikipedia SQL dump sources
-
----
-
-## Authors
-
-Khizar Zaman, Safid Musabbir, Tanishq Pol, Ali Mallick — University of Toronto, CSC111, 2026
