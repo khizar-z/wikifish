@@ -177,6 +177,30 @@ Once you see `Starting server at http://127.0.0.1:8050`, open that URL in your b
 
 ---
 
+## Deployment
+
+WikiFish is designed to be deployed as a long-running Python service with a precompiled snapshot on local disk.
+
+- Use `python3 main.py compile` on a build machine to produce snapshot artifacts
+- Copy the compiled snapshot to the host machine
+- Serve the app with `gunicorn` using `wsgi.py`
+- Put a reverse proxy such as Caddy in front of it for HTTPS
+
+Example production command:
+
+```bash
+gunicorn -c gunicorn.conf.py wsgi:server
+```
+
+An Arch Linux deployment guide, example `systemd` unit, and Caddy snippet are included in:
+
+- `docs/deployment-arch.md`
+- `deploy/systemd/wikifish.service`
+- `deploy/systemd/wikifish.env.example`
+- `deploy/caddy/wikifish.Caddyfile`
+
+---
+
 ## Project structure
 
 ```

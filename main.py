@@ -34,6 +34,10 @@ def parse_args() -> argparse.Namespace:
 
     serve_parser = subparsers.add_parser('serve', help='Start the Dash application.')
     serve_parser.add_argument('--data-dir', default=DEFAULT_SNAPSHOT_DIR, help='Compiled snapshot artifact directory.')
+    serve_parser.add_argument('--host', default=os.environ.get('WIKIFISH_HOST', '127.0.0.1'),
+                              help='Host interface for the development server.')
+    serve_parser.add_argument('--port', type=int, default=int(os.environ.get('WIKIFISH_PORT', '8050')),
+                              help='Port for the development server.')
 
     parser.set_defaults(command='serve')
     return parser.parse_args()
@@ -72,8 +76,8 @@ def main() -> None:
         return
 
     loaded_backend = load_backend(args.data_dir)
-    print('Starting server at http://127.0.0.1:8050 ...')
-    wikifish_app.init(loaded_backend)
+    print(f'Starting server at http://{args.host}:{args.port} ...')
+    wikifish_app.init(loaded_backend, host=args.host, port=args.port)
 
 
 if __name__ == '__main__':

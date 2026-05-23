@@ -4,6 +4,8 @@ Dash application for WikiFish.
 """
 from __future__ import annotations
 
+import os
+
 import dash
 from dash import Input, Output, State, callback_context, dcc, html
 import plotly.graph_objects as go
@@ -24,10 +26,14 @@ def configure_backend(loaded_backend: WikiBackend) -> None:
     app.layout = _build_layout()
 
 
-def init(loaded_backend: WikiBackend) -> None:
+def init(loaded_backend: WikiBackend, host: str | None = None, port: int | None = None) -> None:
     """Initialise the Dash app and start the server."""
     configure_backend(loaded_backend)
-    app.run(debug=False)
+    app.run(
+        debug=False,
+        host=host or os.environ.get('WIKIFISH_HOST', '127.0.0.1'),
+        port=port or int(os.environ.get('WIKIFISH_PORT', '8050')),
+    )
 
 
 QUALITY_COLOURS = {
@@ -39,6 +45,7 @@ QUALITY_COLOURS = {
 }
 
 app = dash.Dash(__name__)
+server = app.server
 
 
 def _build_layout() -> html.Div:

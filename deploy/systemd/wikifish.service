@@ -1,0 +1,17 @@
+[Unit]
+Description=WikiFish Dash application
+After=network.target
+
+[Service]
+Type=simple
+User=wikifish
+Group=wikifish
+WorkingDirectory=/srv/wikifish/app
+EnvironmentFile=-/etc/conf.d/wikifish
+ExecStart=/srv/wikifish/app/.venv/bin/gunicorn -c /srv/wikifish/app/gunicorn.conf.py wsgi:server
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=600
+
+[Install]
+WantedBy=multi-user.target
